@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Repository\UserRepository;
 use FOS\RestBundle\Controller\FOSRestController;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 
 use App\Entity\User;
@@ -15,6 +16,9 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class UsersController extends AbstractFOSRestController
 {
@@ -42,15 +46,30 @@ class UsersController extends AbstractFOSRestController
     }
 
     // ADMIN CREATE
+
     /**
      * @Rest\Post("/api/admin/users")
      * @Rest\View(serializerGroups={"user-admin"})
      * @ParamConverter("user", converter="fos_rest.request_body")
      * @param User $user
+     * @param ConstraintViolationListInterface $validationErrors
      * @return \FOS\RestBundle\View\View
      */
-    public function postApiUser(User $user)
+    public function postApiUser(User $user, ConstraintViolationListInterface $validationErrors)
     {
+        $errors = array();
+        if($validationErrors->count() > 0){
+            /* @var ConstraintViolation $constraintViolation */
+            foreach($validationErrors as $constraintViolation){
+                $message = $constraintViolation->getMessage();
+                $propertyPath = $constraintViolation->getPropertyPath();
+                $errors[] = ['message' => $message, 'propertyPath' => $propertyPath];
+            }
+        }
+        if(!empty($errors)) {
+            throw new BadRequestHttpException(\json_encode($errors));
+        }
+
         $this->em->persist($user);
         $this->em->flush();
         return $this->view($user, Response::HTTP_CREATED); // 201
@@ -69,14 +88,16 @@ class UsersController extends AbstractFOSRestController
     }
 
     // ADMIN UPDATE
+
     /**
      * @Rest\Patch("/api/admin/users/{id}")
      * @Rest\View(serializerGroups={"user-admin"})
      * @param User $user
      * @param Request $request
+     * @param ValidatorInterface $validator
      * @return \FOS\RestBundle\View\View
      */
-    public function patchApiUser(User $user, Request $request)
+    public function patchApiUser(User $user, Request $request, ValidatorInterface $validator)
     {
         if(!empty($request->get('firstName')))
         {
@@ -97,6 +118,20 @@ class UsersController extends AbstractFOSRestController
         if(!empty($request->get('apiKey')))
         {
             $user->setApiKey($request->get('apiKey'));
+        }
+
+        $validationErrors = $validator->validate($user);
+        $errors = array();
+        if($validationErrors->count() > 0){
+            /* @var ConstraintViolation $constraintViolation */
+            foreach($validationErrors as $constraintViolation){
+                $message = $constraintViolation->getMessage();
+                $propertyPath = $constraintViolation->getPropertyPath();
+                $errors[] = ['message' => $message, 'propertyPath' => $propertyPath];
+            }
+        }
+        if(!empty($errors)) {
+            throw new BadRequestHttpException(\json_encode($errors));
         }
 
          $this->em->persist($user);
@@ -178,7 +213,7 @@ class UsersController extends AbstractFOSRestController
 
     // ANONYMOUS CREATE
     /**
-     * @Rest\Post("/api/anon/signup")
+     * @Rest\Post("/api/signup")
      * @Rest\View(serializerGroups={"user-key"})
      * @ParamConverter("user", converter="fos_rest.request_body")
      * @param User $user
