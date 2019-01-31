@@ -8,9 +8,9 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * @UniqueEntity("email")
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  */
 class User implements UserInterface
@@ -20,42 +20,49 @@ class User implements UserInterface
      * @ORM\Id()
      * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
+     * @Assert\NotBlank()
      */
     private $id;
 
     /**
      * @Groups({"user-admin", "user"})
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
      */
     private $firstName;
 
     /**
      * @Groups({"user-admin", "user"})
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
      */
     private $lastName;
 
     /**
      * @Groups({"user-admin", "user", "user-key"})
      * @ORM\Column(type="string", unique=true)
+     * @Assert\Email()
      */
     private $email;
 
     /**
      * @Groups("user-admin")
      * @ORM\Column(type="datetime", nullable=true)
+     * @Assert\DateTime()
      */
     private $birthday;
 
     /**
      * @Groups("user-admin")
      * @ORM\Column(type="simple_array")
+     * @Assert\NotBlank()
      */
     private $roles = [];
 
     /**
      * @Groups({"user-admin", "user-key"})
      * @ORM\Column(type="string", unique=true)
+     * @Assert\NotBlank()
      */
     private $apiKey;
 
