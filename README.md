@@ -1,5 +1,4 @@
-## Getting Started
-
+## Getting Started [![Build Status](https://travis-ci.com/flocallewaert/symfony-api.svg?branch=develop)](https://travis-ci.com/flocallewaert/symfony-api)
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
